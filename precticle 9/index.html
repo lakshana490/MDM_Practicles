@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusTask - Student Personal Task Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.4);
+            border-radius: 20px;
+        }
+        .task-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .task-completed {
+            opacity: 0.65;
+            filter: grayscale(20%);
+        }
+        .task-completed .task-title {
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-full flex flex-col transition-colors duration-300">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700/60 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 text-white flex items-center justify-center shadow-md shadow-brand-500/20">
+                    <i class="fa-solid fa-list-check text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 to-indigo-500 bg-clip-text text-transparent">CampusTask</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:block">Academic & Personal Task Planner</p>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center space-x-3">
+                <button id="theme-toggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" title="Toggle Theme">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <button id="open-new-task-btn" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-600/30 hover:shadow-lg transition flex items-center space-x-2">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>New Task</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+
+        <!-- Analytics Overview Dashboard -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Tasks -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Tasks</p>
+                    <h3 id="stat-total" class="text-3xl font-black text-slate-900 dark:text-white mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-tasks"></i>
+                </div>
+            </div>
+
+            <!-- Pending Academic -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pending Tasks</p>
+                    <h3 id="stat-pending" class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+            </div>
+
+            <!-- Completed Tasks -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Completed</p>
+                    <h3 id="stat-completed" class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl">
+                    <i class="fa-regular fa-circle-check"></i>
+                </div>
+            </div>
+
+            <!-- Overdue Tasks -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Overdue</p>
+                    <h3 id="stat-overdue" class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Completion Rate Progress Bar -->
+        <section class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-3">
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-brand-500"></i> Daily Completion Progress
+                </span>
+                <span id="progress-percentage" class="font-extrabold text-brand-600 dark:text-brand-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-3 rounded-full w-0 transition-all duration-500"></div>
+            </div>
+        </section>
+
+        <!-- Search, Filter and Sorting Toolbar -->
+        <section class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <!-- Search Bar -->
+                <div class="md:col-span-5 relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="search-input" placeholder="Search tasks by title or description..." 
+                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                </div>
+
+                <!-- Status Filter -->
+                <div class="md:col-span-2">
+                    <select id="filter-status" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                        <option value="all">Status: All</option>
+                        <option value="pending">Status: Pending</option>
+                        <option value="completed">Status: Completed</option>
+                        <option value="overdue">Status: Overdue</option>
+                    </select>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="md:col-span-3">
+                    <select id="filter-category" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                        <option value="all">Category: All</option>
+                        <option value="Academic">Academic</option>
+                        <option value="Assignment">Assignment</option>
+                        <option value="Exam Prep">Exam Prep</option>
+                        <option value="Project">Project</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+                </div>
+
+                <!-- Sort Field -->
+                <div class="md:col-span-2">
+                    <select id="sort-by" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                        <option value="dueDate">Sort: Due Date</option>
+                        <option value="priority">Sort: Priority</option>
+                        <option value="created">Sort: Creation Date</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Task List Header & Task Cards Container -->
+        <section class="space-y-4">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <span>Task List</span>
+                    <span id="task-count-badge" class="px-2.5 py-0.5 text-xs bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 font-extrabold rounded-full">0</span>
+                </h2>
+                <button id="clear-completed-btn" class="text-xs font-semibold text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition hidden">
+                    <i class="fa-regular fa-trash-can mr-1"></i> Clear Completed
+                </button>
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="empty-state" class="bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center space-y-4 hidden">
+                <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center mx-auto text-slate-400 text-2xl">
+                    <i class="fa-regular fa-folder-open"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-700 dark:text-slate-200 text-lg">No Tasks Found</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">You have no tasks matching your selected filters or search terms.</p>
+                </div>
+            </div>
+
+            <!-- Task Grid List -->
+            <div id="task-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamic task cards inserted via JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Create / Edit Task Modal Overlay -->
+    <div id="task-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-50 dark:bg-slate-700/40 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-800 dark:text-slate-100">Create New Task</h3>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="task-form" class="p-6 space-y-4">
+                <input type="hidden" id="task-id">
+
+                <!-- Title -->
+                <div>
+                    <label for="task-title" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Task Title *</label>
+                    <input type="text" id="task-title" required placeholder="e.g. Complete Physics Lab Report" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="task-desc" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Description / Notes</label>
+                    <textarea id="task-desc" rows="3" placeholder="Additional details, references, submission links..." 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Category & Priority Row -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="task-category" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Category</label>
+                        <select id="task-category" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="Academic">Academic</option>
+                            <option value="Assignment">Assignment</option>
+                            <option value="Exam Prep">Exam Prep</option>
+                            <option value="Project">Project</option>
+                            <option value="Personal">Personal</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="task-priority" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Priority</label>
+                        <select id="task-priority" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Due Date & Time -->
+                <div>
+                    <label for="task-duedate" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Due Date & Time *</label>
+                    <input type="datetime-local" id="task-duedate" required 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="pt-4 flex justify-end space-x-3 border-t border-slate-200 dark:border-slate-700">
+                    <button type="button" id="cancel-modal-btn" class="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 text-sm font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-md transition">
+                        Save Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Default initial task seeds for students
+        const SAMPLE_TASKS = [
+            {
+                id: '1',
+                title: 'Submit CS Assignment 3',
+                description: 'Complete the Python recursion and dynamic programming problems.',
+                category: 'Assignment',
+                priority: 'High',
+                dueDate: new Date(Date.now() + 86400000 * 1).toISOString().slice(0, 16),
+                completed: false,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '2',
+                title: 'Study for Linear Algebra Midterm',
+                description: 'Review Chapter 4 Eigenvalues and Matrix transformations.',
+                category: 'Exam Prep',
+                priority: 'High',
+                dueDate: new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16),
+                completed: false,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '3',
+                title: 'Buy Groceries & Essentials',
+                description: 'Milk, eggs, coffee beans, and highlighters.',
+                category: 'Personal',
+                priority: 'Low',
+                dueDate: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 16),
+                completed: true,
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        // Global State Manager
+        let tasks = [];
+
+        // DOM Elements
+        const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        const taskModal = document.getElementById('task-modal');
+        const taskForm = document.getElementById('task-form');
+        const openModalBtn = document.getElementById('open-new-task-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+        const searchInput = document.getElementById('search-input');
+        const filterStatus = document.getElementById('filter-status');
+        const filterCategory = document.getElementById('filter-category');
+        const sortBy = document.getElementById('sort-by');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const clearCompletedBtn = document.getElementById('clear-completed-btn');
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadTasks();
+            setupEventListeners();
+            closeModal();
+            render();
+        });
+
+        // Theme Switcher Initialization
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-toggle-icon').className = 'fa-solid fa-sun';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('theme-toggle-icon').className = 'fa-solid fa-moon';
+            }
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+            document.getElementById('theme-toggle-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        });
+
+        // Load tasks from localStorage or set defaults
+        function loadTasks() {
+            const stored = localStorage.getItem('campustask_items');
+            if (stored) {
+                try {
+                    tasks = JSON.parse(stored);
+                } catch(e) {
+                    tasks = [...SAMPLE_TASKS];
+                }
+            } else {
+                tasks = [...SAMPLE_TASKS];
+                saveTasks();
+            }
+        }
+
+        function saveTasks() {
+            localStorage.setItem('campustask_items', JSON.stringify(tasks));
+        }
+
+        // Setup Event Handlers
+        function setupEventListeners() {
+            openModalBtn.addEventListener('click', () => openModal());
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelModalBtn.addEventListener('click', closeModal);
+
+            taskForm.addEventListener('submit', handleTaskSubmit);
+
+            searchInput.addEventListener('input', render);
+            filterStatus.addEventListener('change', render);
+            filterCategory.addEventListener('change', render);
+            sortBy.addEventListener('change', render);
+
+            clearCompletedBtn.addEventListener('click', () => {
+                tasks = tasks.filter(t => !t.completed);
+                saveTasks();
+                render();
+                showToast('Completed tasks cleared', 'info');
+            });
+        }
+
+        // Modal Handlers
+        function openModal(taskToEdit = null) {
+            taskForm.reset();
+            if (taskToEdit) {
+                document.getElementById('modal-title').textContent = 'Edit Task';
+                document.getElementById('task-id').value = taskToEdit.id;
+                document.getElementById('task-title').value = taskToEdit.title;
+                document.getElementById('task-desc').value = taskToEdit.description || '';
+                document.getElementById('task-category').value = taskToEdit.category;
+                document.getElementById('task-priority').value = taskToEdit.priority;
+                document.getElementById('task-duedate').value = taskToEdit.dueDate;
+            } else {
+                document.getElementById('modal-title').textContent = 'Create New Task';
+                document.getElementById('task-id').value = '';
+                // Default due date to tomorrow same time
+                const tomorrow = new Date(Date.now() + 86400000);
+                document.getElementById('task-duedate').value = tomorrow.toISOString().slice(0, 16);
+            }
+            taskModal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            taskModal.classList.add('hidden');
+        }
+
+        // Form Submission
+        function handleTaskSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('task-id').value;
+            const title = document.getElementById('task-title').value.trim();
+            const description = document.getElementById('task-desc').value.trim();
+            const category = document.getElementById('task-category').value;
+            const priority = document.getElementById('task-priority').value;
+            const dueDate = document.getElementById('task-duedate').value;
+
+            if (id) {
+                // Edit existing
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    task.title = title;
+                    task.description = description;
+                    task.category = category;
+                    task.priority = priority;
+                    task.dueDate = dueDate;
+                    showToast('Task updated successfully', 'success');
+                }
+            } else {
+                // Create new
+                const newTask = {
+                    id: Date.now().toString(),
+                    title,
+                    description,
+                    category,
+                    priority,
+                    dueDate,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                tasks.unshift(newTask);
+                showToast('New task added', 'success');
+            }
+
+            saveTasks();
+            closeModal();
+            render();
+        }
+
+        // Toggle Task Complete Status
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+                render();
+                showToast(task.completed ? 'Task completed! Great job 🎉' : 'Task marked pending', task.completed ? 'success' : 'info');
+            }
+        }
+
+        // Delete Task with Undo Option
+        function deleteTask(id) {
+            const index = tasks.findIndex(t => t.id === id);
+            if (index !== -1) {
+                const deletedTask = tasks.splice(index, 1)[0];
+                saveTasks();
+                render();
+                
+                showToast('Task deleted', 'danger', () => {
+                    tasks.splice(index, 0, deletedTask);
+                    saveTasks();
+                    render();
+                });
+            }
+        }
+
+        // Main Render Function
+        function render() {
+            const query = searchInput.value.toLowerCase().trim();
+            const statusFilter = filterStatus.value;
+            const categoryFilter = filterCategory.value;
+            const sortVal = sortBy.value;
+
+            const now = new Date();
+
+            // Filter logic
+            let filtered = tasks.filter(task => {
+                const matchesSearch = task.title.toLowerCase().includes(query) || (task.description && task.description.toLowerCase().includes(query));
+                const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter;
+
+                const isOverdue = !task.completed && new Date(task.dueDate) < now;
+
+                let matchesStatus = true;
+                if (statusFilter === 'pending') matchesStatus = !task.completed;
+                else if (statusFilter === 'completed') matchesStatus = task.completed;
+                else if (statusFilter === 'overdue') matchesStatus = isOverdue;
+
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+
+            // Sort logic
+            filtered.sort((a, b) => {
+                if (sortVal === 'dueDate') {
+                    return new Date(a.dueDate) - new Date(b.dueDate);
+                } else if (sortVal === 'priority') {
+                    const weight = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                    return weight[b.priority] - weight[a.priority];
+                } else {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+            });
+
+            // Render Task Cards
+            taskList.innerHTML = '';
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(task => taskList.appendChild(createTaskCard(task)));
+            }
+
+            // Update Metrics Dashboard
+            updateDashboardMetrics();
+        }
+
+        // Create HTML Element for Individual Task
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            const isOverdue = !task.completed && new Date(task.dueDate) < new Date();
+            
+            // Card Border and Background Class Based on Status
+            card.className = `task-card bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col justify-between space-y-4 relative ${task.completed ? 'task-completed' : ''}`;
+
+            // Priority Badge Colors
+            const priorityBadge = {
+                'High': 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+                'Medium': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                'Low': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+            }[task.priority];
+
+            // Format Due Date
+            const formattedDueDate = new Date(task.dueDate).toLocaleString([], {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            card.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <button onclick="toggleTask('${task.id}')" class="mt-0.5 text-xl transition text-slate-300 dark:text-slate-600 hover:text-emerald-500">
+                                <i class="${task.completed ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle'}"></i>
+                            </button>
+                            <div>
+                                <h3 class="task-title font-bold text-slate-900 dark:text-slate-100 text-base leading-snug">${escapeHTML(task.title)}</h3>
+                                ${task.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">${escapeHTML(task.description)}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <!-- Category Badge -->
+                        <span class="px-2.5 py-0.5 text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md">
+                            <i class="fa-solid fa-tag text-[10px] mr-1"></i>${task.category}
+                        </span>
+
+                        <!-- Priority Badge -->
+                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-md border ${priorityBadge}">
+                            ${task.priority} Priority
+                        </span>
+
+                        ${isOverdue ? `
+                            <span class="px-2 py-0.5 text-xs font-bold bg-rose-500 text-white rounded-md animate-pulse">
+                                Overdue
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center gap-1 ${isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : ''}">
+                        <i class="fa-regular fa-calendar text-slate-400"></i> ${formattedDueDate}
+                    </span>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="editTask('${task.id}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 hover:text-brand-600 transition" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 hover:text-rose-600 transition" title="Delete">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function editTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) openModal(task);
+        }
+
+        function updateDashboardMetrics() {
+            const now = new Date();
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const pending = total - completed;
+            const overdue = tasks.filter(t => !t.completed && new Date(t.dueDate) < now).length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-overdue').textContent = overdue;
+
+            document.getElementById('task-count-badge').textContent = total;
+
+            // Calculate percentage
+            const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+            document.getElementById('progress-percentage').textContent = `${percentage}%`;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+
+            // Toggle clear completed button
+            if (completed > 0) {
+                clearCompletedBtn.classList.remove('hidden');
+            } else {
+                clearCompletedBtn.classList.add('hidden');
+            }
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'info', undoAction = null) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center justify-between p-4 rounded-xl shadow-lg border text-sm font-medium text-white transition-all duration-300 transform translate-y-2 opacity-0 max-w-md ${
+                type === 'success' ? 'bg-emerald-600 border-emerald-500' :
+                type === 'danger' ? 'bg-slate-800 dark:bg-slate-700 border-slate-700' : 'bg-brand-600 border-brand-500'
+            }`;
+
+            toast.innerHTML = `
+                <div class="flex items-center space-x-2 mr-3">
+                    <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i>
+                    <span>${message}</span>
+                </div>
+                ${undoAction ? `
+                    <button id="undo-btn" class="ml-3 px-2 py-1 text-xs font-bold uppercase underline hover:text-amber-300 transition">Undo</button>
+                ` : ''}
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            if (undoAction) {
+                toast.querySelector('#undo-btn').addEventListener('click', () => {
+                    undoAction();
+                    removeToast(toast);
+                });
+            }
+
+            setTimeout(() => {
+                removeToast(toast);
+            }, 4000);
+        }
+
+        function removeToast(toast) {
+            toast.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // Helper string sanitizer
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>

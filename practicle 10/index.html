@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Task & Productivity Tracker</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .dark .glass {
+      background: rgba(30, 41, 59, 0.7);
+    }
+    .widget-mode {
+      max-width: 420px !important;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-all duration-300">
+
+  <div id="appContainer" class="max-w-5xl mx-auto p-4 sm:p-6 transition-all duration-300">
+    
+    <!-- Top Header & Dashboard -->
+    <header class="glass rounded-3xl p-6 mb-6 shadow-xl border border-white/40 dark:border-slate-700/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+          Aesthetic Task Desk
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Organize academic assignments & personal daily goals</p>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex items-center gap-3">
+        <!-- Streak Badge -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-bold text-xs">
+          <i class="fa-solid fa-fire text-sm"></i>
+          <span id="streakCount">3 Day Streak</span>
+        </div>
+
+        <!-- Mini Desktop Widget Toggle -->
+        <button onclick="toggleWidgetMode()" id="widgetBtn" title="Toggle Desktop Sticky View" class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 transition shadow-sm border border-slate-200 dark:border-slate-700">
+          <i class="fa-solid fa-up-right-and-down-left-from-center text-sm"></i>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 transition shadow-sm border border-slate-200 dark:border-slate-700">
+          <i id="themeIcon" class="fa-solid fa-moon text-sm"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Productivity Progress Bar -->
+    <div class="glass rounded-2xl p-4 mb-6 shadow-md border border-white/40 dark:border-slate-700/50">
+      <div class="flex justify-between items-center mb-2 text-xs font-semibold">
+        <span id="progressText">Daily Productivity: 0%</span>
+        <span id="progressStats">0/0 Completed</span>
+      </div>
+      <div class="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+        <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-pink-500 h-full w-0 transition-all duration-500 rounded-full"></div>
+      </div>
+    </div>
+
+    <!-- Quick Add Input Bar -->
+    <div class="glass rounded-2xl p-3 mb-6 shadow-md border border-white/40 dark:border-slate-700/50 flex flex-col sm:flex-row gap-2">
+      <input type="text" id="taskInput" placeholder="Add a new academic or personal task..." class="flex-1 bg-transparent border-none outline-none px-3 py-2 text-sm placeholder-slate-400 dark:placeholder-slate-500" />
+      <select id="categorySelect" class="bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
+        <option value="Academic">📚 Academic</option>
+        <option value="Assignment">📝 Assignment</option>
+        <option value="Campus Life">🏫 Campus</option>
+        <option value="Personal">✨ Personal</option>
+      </select>
+      <input type="date" id="dueDateInput" class="bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none min-w-[130px]" />
+      <button onclick="addTask()" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium text-xs px-4 py-2 rounded-xl hover:opacity-90 active:scale-95 transition flex items-center gap-1.5 shadow-md">
+        <i class="fa-solid fa-plus"></i> Add
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div class="flex gap-1.5 overflow-x-auto pb-1" id="categoryFilter">
+        <button onclick="filterCategory('All')" data-category="All" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-medium bg-indigo-600 text-white shadow-sm">All</button>
+        <button onclick="filterCategory('Academic')" data-category="Academic" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-medium bg-white/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Academic</button>
+        <button onclick="filterCategory('Assignment')" data-category="Assignment" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-medium bg-white/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Assignment</button>
+        <button onclick="filterCategory('Campus Life')" data-category="Campus Life" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-medium bg-white/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Campus Life</button>
+        <button onclick="filterCategory('Personal')" data-category="Personal" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-medium bg-white/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Personal</button>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs">
+        <button onclick="filterStatus('all')" data-status="all" class="status-btn font-semibold text-indigo-600 dark:text-indigo-400">All</button>
+        <span class="text-slate-300 dark:text-slate-600">•</span>
+        <button onclick="filterStatus('active')" data-status="active" class="status-btn text-slate-500 hover:text-indigo-500">Active</button>
+        <span class="text-slate-300 dark:text-slate-600">•</span>
+        <button onclick="filterStatus('completed')" data-status="completed" class="status-btn text-slate-500 hover:text-indigo-500">Completed</button>
+      </div>
+    </div>
+
+    <!-- Task List Container -->
+    <div id="taskList" class="space-y-3">
+      <!-- Dynamic Task Cards Rendered Here -->
+    </div>
+  </div>
+
+  <script>
+    const validCategories = ['Academic', 'Assignment', 'Campus Life', 'Personal'];
+
+    // App State
+    let tasks = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem('student_app_tasks'));
+      tasks = Array.isArray(saved) && saved.length ? saved : [
+        { id: 1, title: 'Submit Computer Networks Lab Assignment', category: 'Assignment', completed: false, dueDate: '2026-10-10' },
+        { id: 2, title: 'Review Database Management System notes', category: 'Academic', completed: true, dueDate: '2026-10-09' },
+        { id: 3, title: 'Gym session at Campus Sports Complex', category: 'Personal', completed: false, dueDate: '2026-10-12' }
+      ];
+    } catch (error) {
+      tasks = [
+        { id: 1, title: 'Submit Computer Networks Lab Assignment', category: 'Assignment', completed: false, dueDate: '2026-10-10' },
+        { id: 2, title: 'Review Database Management System notes', category: 'Academic', completed: true, dueDate: '2026-10-09' },
+        { id: 3, title: 'Gym session at Campus Sports Complex', category: 'Personal', completed: false, dueDate: '2026-10-12' }
+      ];
+    }
+    let selectedCategory = 'All';
+    let selectedStatus = 'all';
+
+    function formatDueDate(dateValue) {
+      if (!dateValue) return 'No due date';
+      const date = new Date(dateValue + 'T00:00:00');
+      if (Number.isNaN(date.getTime())) return 'No due date';
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function applyTheme(theme) {
+      const darkMode = theme === 'dark';
+      document.documentElement.classList.toggle('dark', darkMode);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        icon.className = darkMode ? 'fa-solid fa-sun text-yellow-400 text-sm' : 'fa-solid fa-moon text-sm';
+      }
+      localStorage.setItem('student_app_theme', theme);
+    }
+
+    function updateFilterUI() {
+      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        const active = btn.textContent.trim() === selectedCategory;
+        btn.className = `cat-filter-btn px-3 py-1 rounded-full text-xs font-medium ${active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`;
+      });
+
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        const active = btn.getAttribute('data-status') === selectedStatus;
+        btn.className = `status-btn font-semibold ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-indigo-500'}`;
+      });
+    }
+
+    // Core Functions
+    function saveAndRender() {
+      localStorage.setItem('student_app_tasks', JSON.stringify(tasks));
+      renderTasks();
+      updateProgress();
+      updateStreakBadge();
+    }
+
+    function renderTasks() {
+      const listContainer = document.getElementById('taskList');
+      listContainer.innerHTML = '';
+
+      const filtered = tasks.filter(t => {
+        const matchesCategory = selectedCategory === 'All' || t.category === selectedCategory;
+        const matchesStatus = selectedStatus === 'all' ? true : selectedStatus === 'active' ? !t.completed : t.completed;
+        return matchesCategory && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="glass rounded-2xl p-8 text-center text-slate-400 dark:text-slate-500 text-sm">
+            <i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
+            <p>No tasks found in this section!</p>
+          </div>`;
+        return;
+      }
+
+      filtered.forEach(task => {
+        const card = document.createElement('div');
+        card.className = `glass rounded-2xl p-4 shadow-sm border border-white/50 dark:border-slate-700/50 transition-all duration-200 hover:shadow-md ${task.completed ? 'opacity-60 line-through' : ''}`;
+        
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})" class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+              <div class="min-w-0 flex-1">
+                <span class="text-sm block truncate ${task.completed ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}">${task.title}</span>
+                <div class="mt-1 flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                  <i class="fa-regular fa-calendar"></i>
+                  <span>${formatDueDate(task.dueDate)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900">${task.category}</span>
+              <button onclick="editTask(${task.id})" class="text-slate-400 hover:text-indigo-500 text-xs p-1 transition" title="Edit task"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteTask(${task.id})" class="text-slate-400 hover:text-red-500 text-xs p-1 transition" title="Delete task"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    function addTask() {
+      const input = document.getElementById('taskInput');
+      const categorySelect = document.getElementById('categorySelect');
+      const dueDateInput = document.getElementById('dueDateInput');
+      const title = input.value.trim();
+
+      if (!title) return;
+
+      tasks.unshift({
+        id: Date.now(),
+        title: title,
+        category: categorySelect.value,
+        completed: false,
+        dueDate: dueDateInput.value || null
+      });
+
+      input.value = '';
+      dueDateInput.value = '';
+      saveAndRender();
+    }
+
+    function toggleTask(id) {
+      tasks = tasks.map(t => {
+        if (t.id === id) {
+          const updated = !t.completed;
+          if (updated && typeof confetti === 'function') {
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+          }
+          return { ...t, completed: updated };
+        }
+        return t;
+      });
+      saveAndRender();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveAndRender();
+    }
+
+    function editTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const updatedTitle = window.prompt('Edit task title:', task.title);
+      if (updatedTitle !== null) {
+        task.title = updatedTitle.trim() || task.title;
+      }
+
+      const updatedCategory = window.prompt('Edit category (Academic, Assignment, Campus Life, Personal):', task.category);
+      if (updatedCategory !== null) {
+        const normalized = updatedCategory.trim();
+        task.category = validCategories.includes(normalized) ? normalized : task.category;
+      }
+
+      const updatedDueDate = window.prompt('Edit due date (YYYY-MM-DD):', task.dueDate || '');
+      if (updatedDueDate !== null) {
+        task.dueDate = updatedDueDate.trim() || null;
+      }
+
+      saveAndRender();
+    }
+
+    function updateProgress() {
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.completed).length;
+      const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      document.getElementById('progressBar').style.width = `${percentage}%`;
+      document.getElementById('progressText').innerText = `Daily Productivity: ${percentage}%`;
+      document.getElementById('progressStats').innerText = `${completed}/${total} Completed`;
+    }
+
+    function updateStreakBadge() {
+      const streak = tasks.filter(t => t.completed).length || 3;
+      document.getElementById('streakCount').textContent = `${streak} Day Streak`;
+    }
+
+    function filterCategory(cat) {
+      selectedCategory = cat;
+      updateFilterUI();
+      renderTasks();
+    }
+
+    function filterStatus(status) {
+      selectedStatus = status;
+      updateFilterUI();
+      renderTasks();
+    }
+
+    function toggleWidgetMode() {
+      const container = document.getElementById('appContainer');
+      container.classList.toggle('widget-mode');
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+      applyTheme(currentTheme);
+    }
+
+    document.getElementById('taskInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        addTask();
+      }
+    });
+
+    // Initial Render
+    const savedTheme = localStorage.getItem('student_app_theme') || 'light';
+    applyTheme(savedTheme);
+    updateFilterUI();
+    saveAndRender();
+  </script>
+</body>
+</html>
